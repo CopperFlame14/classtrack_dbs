@@ -3,7 +3,7 @@ services:
     name: classroom-tracker
     runtime: node
     buildCommand: npm install && npm run seed
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production

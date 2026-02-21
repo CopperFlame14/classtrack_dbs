@@ -28,13 +28,15 @@ async function debug() {
         // Detailed check if status is 'available' but should be 'occupied'
         if (status.status === 'available' && slot) {
             const timetableEntry = prepare(`
-                SELECT * FROM timetable 
-                WHERE room_id = ? AND slot_id = ? AND day = ?
+                SELECT t.*, c.name AS course_name
+                FROM timetable t
+                JOIN courses c ON t.course_id = c.id
+                WHERE t.room_id = ? AND t.slot_id = ? AND t.day = ?
             `).get(room.id, slot.id, getTodayName());
 
             if (timetableEntry) {
                 console.log(`    ❌ ERROR: Timetable entry found but status is Available!`);
-                console.log(`    Expected: Occupied by ${timetableEntry.subject}`);
+                console.log(`    Expected: Occupied by ${timetableEntry.course_name}`);
                 console.log(`    Debug Query: SELECT * FROM timetable WHERE room_id='${room.id}' AND slot_id=${slot.id} AND day='${getTodayName()}'`);
             } else {
                 console.log(`    ✅ Correct: No timetable entry for this slot.`);

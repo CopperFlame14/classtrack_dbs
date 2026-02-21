@@ -105,16 +105,19 @@ function getRoomStatus(roomId, slotId = null, day = null, date = null) {
 
     // Check timetable - ensure slot_id is integer for comparison
     const timetableEntries = prepare(`
-        SELECT * FROM timetable 
-        WHERE room_id = ? AND CAST(slot_id AS INTEGER) = ? AND day = ?
+        SELECT t.*, c.name AS course_name, f.name AS faculty_name
+        FROM timetable t
+        JOIN courses c  ON t.course_id  = c.id
+        JOIN faculty f  ON t.faculty_id = f.id
+        WHERE t.room_id = ? AND CAST(t.slot_id AS INTEGER) = ? AND t.day = ?
     `).all(roomId, currentSlot, currentDay);
 
     if (timetableEntries.length > 0) {
         const entry = timetableEntries[0];
         return {
             status: 'occupied',
-            reason: entry.subject,
-            faculty: entry.faculty
+            reason: entry.course_name,
+            faculty: entry.faculty_name
         };
     }
 
@@ -125,7 +128,7 @@ function getRoomStatus(roomId, slotId = null, day = null, date = null) {
  * Get all rooms with their current status
  */
 function getAllRoomsWithStatus(slotId = null, date = null) {
-    const rooms = prepare('SELECT * FROM classrooms ORDER BY block, floor, id').all();
+    const rooms = prepare('SELECT * FROM classrooms ORDER BY block_id, floor, id').all();
 
     let targetSlotId = null;
     let targetDay = null;
@@ -150,7 +153,6 @@ function getAllRoomsWithStatus(slotId = null, date = null) {
         const statusInfo = getRoomStatus(room.id, targetSlotId, targetDay, targetDate);
         return {
             ...room,
-            amenities: room.amenities ? JSON.parse(room.amenities) : [],
             currentStatus: statusInfo.status,
             statusReason: statusInfo.reason,
             statusDetails: statusInfo
@@ -185,8 +187,11 @@ function checkConflict(roomId, slotId, date) {
 
     // Check timetable
     const timetableConflicts = prepare(`
-        SELECT * FROM timetable 
-        WHERE room_id = ? AND slot_id = ? AND day = ?
+        SELECT t.*, c.name AS course_name, f.name AS faculty_name
+        FROM timetable t
+        JOIN courses c ON t.course_id  = c.id
+        JOIN faculty f ON t.faculty_id = f.id
+        WHERE t.room_id = ? AND t.slot_id = ? AND t.day = ?
     `).all(roomId, slotId, day);
 
     if (timetableConflicts.length > 0) {
@@ -194,7 +199,7 @@ function checkConflict(roomId, slotId, date) {
         return {
             hasConflict: true,
             type: 'timetable',
-            details: `Regular class: ${conflict.subject} by ${conflict.faculty}`
+            details: `Regular class: ${conflict.course_name} by ${conflict.faculty_name}`
         };
     }
 

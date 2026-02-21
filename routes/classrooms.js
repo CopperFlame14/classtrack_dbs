@@ -8,14 +8,14 @@ const { requireAuth } = require('./auth');
 router.get('/', async (req, res) => {
     try {
         await initDB();
-        const { block, floor, capacity, status, search, slot_id, date } = req.query;
+        const { block_id, floor, capacity, status, search, slot_id, date } = req.query;
 
         // Pass filtering params to getAllRoomsWithStatus
         let rooms = getAllRoomsWithStatus(slot_id, date);
 
         // Apply filters
-        if (block) {
-            rooms = rooms.filter(r => r.block === block);
+        if (block_id) {
+            rooms = rooms.filter(r => r.block_id === block_id);
         }
         if (floor !== undefined && floor !== '') {
             rooms = rooms.filter(r => r.floor === parseInt(floor));
@@ -62,9 +62,13 @@ router.get('/:id', async (req, res) => {
 
         // Get today's schedule for this room
         const todaySchedule = prepare(`
-            SELECT t.*, ts.start_time, ts.end_time, ts.label as slot_label
+            SELECT t.*, ts.start_time, ts.end_time, ts.label as slot_label,
+                   c.name AS course_name, c.code AS course_code,
+                   f.name AS faculty_name
             FROM timetable t
             JOIN time_slots ts ON t.slot_id = ts.id
+            JOIN courses c    ON t.course_id = c.id
+            JOIN faculty f    ON t.faculty_id = f.id
             WHERE t.room_id = ? AND t.day = ?
             ORDER BY ts.id
         `).all(room.id, today);
@@ -78,9 +82,18 @@ router.get('/:id', async (req, res) => {
             ORDER BY ts.id
         `).all(room.id, todayDate);
 
+        // Fetch amenities via join table
+        const amenities = prepare(`
+            SELECT a.id, a.name
+            FROM classroom_amenities ca
+            JOIN amenities a ON ca.amenity_id = a.id
+            WHERE ca.classroom_id = ?
+            ORDER BY a.name
+        `).all(room.id);
+
         res.json({
             ...room,
-            amenities: room.amenities ? JSON.parse(room.amenities) : [],
+            amenities,
             currentStatus: statusInfo.status,
             statusReason: statusInfo.reason,
             statusDetails: statusInfo,

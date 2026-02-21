@@ -24,6 +24,12 @@ app.use('/api/classrooms', require('./routes/classrooms'));
 app.use('/api/reservations', require('./routes/reservations'));
 app.use('/api/timeslots', require('./routes/timetable'));
 app.use('/api/auth', require('./routes/auth'));
+// New module routes
+app.use('/api/blocks', require('./routes/blocks'));
+app.use('/api/departments', require('./routes/departments'));
+app.use('/api/courses', require('./routes/courses'));
+app.use('/api/faculty', require('./routes/faculty'));
+app.use('/api/amenities', require('./routes/amenities'));
 
 // Helper to get base URL dynamically
 function getBaseUrl(req) {

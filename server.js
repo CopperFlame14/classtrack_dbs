@@ -110,6 +110,15 @@ async function startServer() {
         await initDB();
         console.log('📦 Database initialized');
 
+        // Auto-seed if database is empty (e.g. first deploy on Render)
+        const { prepare } = require('./database/db');
+        const blockCount = prepare('SELECT COUNT(*) as count FROM blocks').get();
+        if (!blockCount || blockCount.count === 0) {
+            console.log('🌱 Empty database detected – running auto-seed...');
+            const { seed } = require('./database/seed');
+            await seed();
+        }
+
         // Initialize scheduler
         const { initScheduler } = require('./services/scheduler');
         initScheduler();

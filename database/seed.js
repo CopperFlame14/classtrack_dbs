@@ -193,4 +193,10 @@ async function seed() {
     console.log('\n🎉 Database seeding complete! All 10 modules populated.');
 }
 
-seed().catch(console.error);
+// Export for use by server.js auto-seed
+module.exports = { seed };
+
+// Run directly when called via CLI: node database/seed.js
+if (require.main === module) {
+    seed().catch(console.error);
+}
